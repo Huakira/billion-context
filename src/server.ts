@@ -4398,9 +4398,16 @@ export async function preflightCompressIfNeeded(
             log("warn", `[${session.id}] auto-fold target ${compressionTarget} unreachable — the session's irreducible baseline measures ~${rebuiltTextSize + imageTokens} tokens (system prompt + tools + live tail); effective target raised to the floor until the gap closes (#3444). Raise compress.externalSummary.autoFoldTargetTokens above ${rebuiltTextSize + imageTokens} for headroom`);
         }
     } else {
+        // #6395: judge fit on the SAME calibrated estimate the trigger used —
+        // the uncalibrated estimateCoreMessages undershoots when k̂ > 1 (the
+        // per-route calibration factor learned from this session's own usage
+        // reports), so the trigger fires (calibratedPayload ≥ limit) while the
+        // fits check says the payload fits (uncalibrated < limit) → forwards a
+        // guaranteed-400. The if-branch above already uses rebuiltCalibrated;
+        // this else-branch must use calibratedPayload for the same reason.
         fits = unknownBaseline
             ? result.fitsWindow
-            : estimateCoreMessages(prepared.processedMessages) + overheadEstimate + imageTokens < limit;
+            : calibratedPayload < limit;
     }
     const f = result.failure;
     // 重建过程也会让出执行权；所有转发许可都必须在此重新检查取消。

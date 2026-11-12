@@ -67,7 +67,14 @@ function canonicalizeWithContext(value: unknown, key: string | undefined): unkno
             // DIGEST_SKIPPED_KEYS for why presence, not value, is the problem.
             // hasOwn, not `in` — a "__proto__" key must not read as skipped.
             if (Object.hasOwn(DIGEST_SKIPPED_KEYS, k)) continue;
-            out[k] = canonicalizeWithContext(v, k);
+            const cv = canonicalizeWithContext(v, k);
+            // "__proto__" is an accessor on Object.prototype: `out[k] = cv`
+            // would invoke its setter (repointing the prototype) instead of
+            // creating an own JSON property, silently dropping the field from
+            // every digest. Define an own data property without touching the
+            // output prototype (#6222).
+            if (k === "__proto__") Object.defineProperty(out, k, { value: cv, enumerable: true, writable: true, configurable: true });
+            else out[k] = cv;
         }
         return out;
     }
@@ -155,8 +162,11 @@ export function canonicalDigest(value: unknown): string {
             const orderedKeys = keys.filter(isArrayIndexKey).sort((a, b) => Number(a) - Number(b))
                 .concat(keys.filter((k) => !isArrayIndexKey(k)).sort());
             for (const k of orderedKeys) {
-                // Assigning __proto__ to canonicalize's plain output creates no JSON property.
-                if (Object.hasOwn(DIGEST_SKIPPED_KEYS, k) || k === "__proto__") continue;
+                // __proto__ is an ordinary retained field: it is OWN data on the
+                // input (JSON.parse / defineProperty), so it must digest. The
+                // legacy skip here matched canonicalize's setter bug, not the
+                // contract — both legs now include it (#6222).
+                if (Object.hasOwn(DIGEST_SKIPPED_KEYS, k)) continue;
                 const v = (current as Record<string, unknown>)[k];
                 if (v === undefined || typeof v === "function" || typeof v === "symbol") continue;
                 write(separator);

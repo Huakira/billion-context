@@ -822,14 +822,16 @@ export function resolveContextLimit(
 /** #2317: the matched providers key itself (longest-URL-prefix, same rule as
  *  findRoute) — or undefined when no key matches. Diagnostics need the KEY a
  *  request resolved against (or proof of a route-miss), which findRoute's
- *  route-object return cannot express. A key matches if upstreamUrl === key OR
- *  upstreamUrl starts with key + "/" (boundary-safe: "https://x.com" does not
- *  match "https://x.com.evil"); longest (most specific) key wins. */
+ *  route-object return cannot express. Query/fragment suffixes do not change
+ *  path-prefix matching; explicit query/fragment keys retain literal matching.
+ *  Path boundaries stay safe ("https://x.com" does not match
+ *  "https://x.com.evil"); longest (most specific) key wins. */
 export function findRouteKey(routes: ProviderRoutes, upstreamUrl: string | undefined): string | undefined {
     if (!upstreamUrl) return undefined;
+    const pathUrl = upstreamUrl.split(/[?#]/, 1)[0];
     let bestKey = "";
     for (const key of Object.keys(routes)) {
-        if (upstreamUrl === key || upstreamUrl.startsWith(key + "/")) {
+        if (upstreamUrl === key || upstreamUrl.startsWith(key + "/") || pathUrl === key || pathUrl.startsWith(key + "/")) {
             if (key.length > bestKey.length) bestKey = key;
         }
     }

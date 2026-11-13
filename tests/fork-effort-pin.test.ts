@@ -191,12 +191,14 @@ function anthropicUpstream(seen: Array<Record<string, unknown>>): Promise<http.S
     return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
 
-async function twoTurns(pin: boolean): Promise<Array<Record<string, unknown>>> {
+async function twoTurns(pin: boolean, nativeBeta = false): Promise<Array<Record<string, unknown>>> {
     const seen: Array<Record<string, unknown>> = [];
     const upstream = await anthropicUpstream(seen);
-    const harness = await startProxy(upstream, (u) => ({ providers: pin ? { [u]: { pinEffort: true } } : {} }));
+    const upstreamUrl = `http://127.0.0.1:${(upstream.address() as { port: number }).port}`;
+    const harness = await startProxy(upstream, (u) => ({ providers: pin ? { [nativeBeta ? `${u}/v1/messages` : u]: { pinEffort: true, ...(nativeBeta ? { renderNone: true } : {}) } } : {} }));
     const sid = `effort-pin-${pin}-${Date.now()}`;
-    const send = (budget: number, msgs: unknown[]) => fetch(`http://127.0.0.1:${harness.port}/v1/messages`, {
+    const requestPath = nativeBeta ? `/bili/${upstreamUrl}/v1/messages?beta=true` : "/v1/messages";
+    const send = (budget: number, msgs: unknown[]) => fetch(`http://127.0.0.1:${harness.port}${requestPath}`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-session-id": sid, "anthropic-version": "2023-06-01" },
         body: JSON.stringify({ model: "claude-x", max_tokens: 64000, thinking: { type: "enabled", budget_tokens: budget }, messages: msgs }),
@@ -216,6 +218,19 @@ test("effort-pin e2e: pinned route forwards the first request's thinking on late
     const seen = await twoTurns(true);
     assert.equal(seen.length, 2);
     assert.deepEqual(seen[1]!.thinking, { type: "enabled", budget_tokens: 1024 });
+});
+
+test("native beta tunnel: endpoint renderNone and pinEffort survive query suffix", async () => {
+    const seen = await twoTurns(true, true);
+    assert.equal(seen.length, 2);
+    assert.deepEqual(seen[1]!.thinking, { type: "enabled", budget_tokens: 1024 });
+    assert.equal(chatAssistantText(seen[1]!), JSON.stringify([{ type: "text", text: "ok" }]));
+});
+
+test("native beta tunnel: unconfigured endpoint retains tags and effort changes", async () => {
+    const seen = await twoTurns(false, true);
+    assert.deepEqual(seen[1]!.thinking, { type: "enabled", budget_tokens: 32000 });
+    assert.match(chatAssistantText(seen[1]!), /acp tokens/);
 });
 
 test("effort-pin e2e: routes without pinEffort forward the client's thinking unchanged", async () => {

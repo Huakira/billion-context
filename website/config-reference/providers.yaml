@@ -129,6 +129,17 @@ entries:
     desc_ja: "ルートスコープのレンダータグ：true でこのルートの履歴に ACP タグを描画せず、false で強制的に有効化（#2483）。"
     site_en: "Route-scoped render tags (#2483): true renders no ACP tags into this route's history — for stateful claude-code relays such as magpie, which validate the echoed history against their own transcript — false forces them on; unset follows diagnostics.renderNone. ACP_RENDER_NONE still wins."
     site_zh: "路由级渲染标记（#2483）：true 时本路由历史不渲染 ACP 标签——面向 magpie 这类会把回传历史与自身 transcript 比对的有状态 claude-code 中继；false 强制开启；不设则跟随 diagnostics.renderNone。ACP_RENDER_NONE 仍然优先。"
+  - key: pinEffort
+    type: boolean
+    default: "false"
+    group: providers
+    id: cr.pe
+    render: route-row
+    desc_en: "Fork-only: pin each session's reasoning effort to its first request on this route."
+    desc_zh: "仅 fork：本路由每个会话的推理强度锁定为首个请求的值。"
+    desc_ja: "フォーク限定：このルートの各セッションの推論強度を最初のリクエストの値に固定します。"
+    site_en: "Fork-only (Huakira/billion-context): pin each session's thinking and output_config.effort to its first Anthropic request on this route, so a mid-conversation effort switch does not restart a stateful relay's run."
+    site_zh: "仅 fork（Huakira/billion-context）：本路由每个会话的 thinking 与 output_config.effort 锁定为首个 Anthropic 请求的值，避免中途切推理强度让有状态中继重开会话。"
   - key: imageBilling
     type: "\"auto\" | \"pixels\" | \"bytes\""
     default: "auto (→ pixels)"

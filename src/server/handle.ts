@@ -76,6 +76,7 @@ import { buildDshCompactionForgeBody, renderDshAuthoredCheckpoint } from "./dsh-
 import { artifactSeedHit, detectAcpArtifacts } from "./chain-artifacts.js";
 import { piSubagentChannelFallback } from "./pi-subagent-channel.js";
 import { FORCE_TEXT_PROTOCOL } from "./inject.js";
+import { applyEffortPin } from "../effort-pin.js";
 import { prepareAnthropic } from "./prepare-anthropic.js";
 import { MSG_IDS_BODY_FIELD, incomingMsgIdsOf, incomingMsgIdsHeader } from "../msgid-pin.js";
 import { harvestIdentity } from "../identity-harvest.js";
@@ -1068,6 +1069,8 @@ async function handleRequest(
     // #2483: route-scoped render tags (`providers[<url>].renderNone`), applied
     // around every prepare of this request (incl. compress-loop rebuilds).
     const routeRenderNone = findRoute(opts.routes, providerDestUrl)?.renderNone;
+    // Fork-only: route-scoped effort pin (src/effort-pin.ts).
+    const routePinEffort = findRoute(opts.routes, providerDestUrl)?.pinEffort === true;
     if (routePassthrough && hopMarker === undefined && protocol && parsed) {
         log("info", `[route-passthrough] ${maskUrlsInText(providerDestUrl)} matches a passthrough route — forwarding verbatim, kernel bypassed`);
     }
@@ -3010,6 +3013,10 @@ async function handleRequest(
                         session.incomingImageIndex = undefined;
                     }
                     const work = parsed;
+                    if (routePinEffort && protocol === "anthropic" && work && typeof work === "object" && !Array.isArray(work)) {
+                        const pinOutcome = applyEffortPin(work as Record<string, unknown>, session.metadata);
+                        if (pinOutcome !== "kept") log("info", `[${session.id}] [effort-pin] ${pinOutcome}`);
+                    }
                     // #3211: pair this request's per-route k̂ calibration policy
                     // (providers[<key>].calibration) onto the session so the NEXT
                     // usage settle applies it at k̂ publication time — same

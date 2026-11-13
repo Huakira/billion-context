@@ -369,6 +369,7 @@
 | `direct` | boolean | false | — | クライアント側の除外：このアップストリームへのトラフィックは決して bili に指向されません。 |
 | `passthrough` | boolean | false | — | セッション状態なしのルートスコープのバイト単位リレー — 不正防止アップストリーム向け。 |
 | `renderNone` | boolean | unset (follows diagnostics.renderNone) | — | ルートスコープのレンダータグ：true でこのルートの履歴に ACP タグを描画せず、false で強制的に有効化（#2483）。 |
+| `pinEffort` | boolean | false | — | フォーク限定：このルートの各セッションの推論強度を最初のリクエストの値に固定します。 |
 | `imageBilling` | "auto" \| "pixels" \| "bytes" | auto (→ pixels) | — | このルートのイメージトークンカウント基準；bytes はバイトリレーに対する明示的なオプトインです。 |
 | `imageTokenCap` | number | unset (uncapped) | — | このルートのイメージごとのトークンコスト上限。 |
 | `resign` | scheme → { enabled?, passthrough?, credentialRef? } | {} (global map applies) | — | グローバル resign マップのルート単位のオーバーライド（レベル 2、最も深いものが優先）。 |

@@ -584,7 +584,9 @@ export async function prepareAnthropic(
         // failed round-trip. Ride the same ephemeral trailing-user-message
         // carrier as the nudge (never persisted, never in the client's
         // re-sent history, prefix-cache safe).
-        if (turn.statusLine) {
+        // Stateful relays require the previous request to remain a prefix.
+        // renderNone routes suppress this non-persisted, moving status footer.
+        if (turn.statusLine && renderStrategy !== "none") {
             rebuiltMessages = insertBeforeTrailingSystemRun(rebuiltMessages, [{ role: "user", content: turn.statusLine }]);
         }
         // [#1343/#1457] surface any earlier undelivered retrieve as an ephemeral

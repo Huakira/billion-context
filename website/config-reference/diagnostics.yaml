@@ -98,8 +98,8 @@ entries:
     default: "false"
     env: ACP_RENDER_NONE
     group: diagnostics
-    desc_en: "Disable all ACP tag rendering (raw wire study mode)."
-    desc_zh: "禁用所有 ACP 标签渲染（原始线路研究模式）。"
+    desc_en: "Disable ACP tags and ephemeral ACP status refresh messages; full compression nudges and tools remain available."
+    desc_zh: "禁用 ACP 标签和临时 ACP 状态刷新消息；完整压缩提醒及工具仍保留。"
     desc_ja: "すべての ACP タグレンダリングを無効化します（生ワイヤ研究モード）。"
   - key: diagnostics.invariantJudge
     type: boolean

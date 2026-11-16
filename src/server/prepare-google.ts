@@ -389,7 +389,7 @@ export async function prepareGoogle(
         // #4521: armed-but-silent window — same carrier + rationale as the
         // anthropic lane (ephemeral trailing user message, current refs
         // instead of model-guessed ones).
-        if (turn.statusLine) {
+        if (turn.statusLine && renderStrategy !== "none") {
             rebuiltContents = [...rebuiltContents, { role: "user", parts: [{ text: turn.statusLine }] }];
         }
     } catch (err) {

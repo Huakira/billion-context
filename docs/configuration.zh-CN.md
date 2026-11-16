@@ -260,7 +260,7 @@
 | `diagnostics.maxAgeDays` | number | unset (off) | BILI_DUMP_MAX_AGE_DAYS | 调试转储目录的保留天数上限；超过该天数的文件被删除（下限 1 小时）。默认关闭。 |
 | `diagnostics.logRetentionHours` | number | 48（下限 1） | BILI_LOG_RETENTION_HOURS | **私有**运行日志（`bili.log`）目标覆盖的历史小时数。日志器在 10 MiB 处把活动文件封存为**不可变、名字唯一**的一代，取代单个 `bili.log.old`，于是每一代都可枚举、窗口是真实的而不是碰巧的。这是**目标**而非承诺：`diagnostics.logBudgetBytes` 是硬上限且永远优先——更短的窗口会被如实报告，绝不悄悄宣称完整。报告的覆盖是**实测跨度**（最旧保留行 → 现在）：分代文件里没有谱系证据，所以 `continuity` 恒为 `unknown`，任何状态都不宣称窗口未中断（时间戳错序同样不被当作历史缺失）。下限 1 小时；非正数或非数值回落到默认 48 小时；按「env 一旦设置即拥有该开关」的约定，非法的 `BILI_LOG_RETENTION_HOURS` 回落到该默认值而不是本键。 |
 | `diagnostics.logBudgetBytes` | number | 268435456（256 MiB，下限 1 MiB） | BILI_LOG_BUDGET_BYTES | 活动日志 + 全部封存分代的总字节硬预算；超出时按**最旧优先**整代删除——排序按封存时间戳（遗留 `.old` 用自己的 mtime），所以迁移来的历史按其真实年代被回收，而不会被跳过、先去删更新的分代。它约束繁忙机器上的磁盘占用与隐私暴露面。当 `logRetentionHours` 所需的字节超出预算时**预算赢**，且不足会被上报（启动时一行 `[warn]`，以及 `GET /__bili/logs` 里的 `retention` 对象）。活动文件永不删除，所以单个活动文件本身就超过预算时会被报告为超预算，而不是被截断。下限 1 MiB；非正数或非数值回落到默认 256 MiB，且与小时键同理：设置了的 `BILI_LOG_BUDGET_BYTES` 拥有该开关。日志文件仅属主可读：首字节起 0600，归档目录 0700（win32 无 POSIX 权限位，由状态目录 ACL 决定）。 |
-| `diagnostics.renderNone` | boolean | false | ACP_RENDER_NONE | 禁用所有 ACP 标签渲染（原始线路研究模式）。 |
+| `diagnostics.renderNone` | boolean | false | ACP_RENDER_NONE | 禁用 ACP 标签和临时 ACP 状态刷新消息；完整压缩提醒及工具仍保留。 |
 | `diagnostics.invariantJudge` | boolean | true | BILI_INVARIANT_JUDGE | 保持 I1/I2 出站不变量判官以 L1 advisory 形态开启（#3938）：每笔请求的出站字节都与客户端入站历史对账，违规以 warn 记录、干净判定以 debug 记录，绝不阻塞流量。设为 false 或 BILI_INVARIANT_JUDGE=0 可静默。 |
 | `diagnostics.noInjectTool` | boolean | false | ACP_NO_INJECT_TOOL | 停止向请求注入 acp_compress 工具定义。 |
 | `diagnostics.noCompressPrompt` | boolean | false | ACP_NO_COMPRESS_PROMPT | 停止向系统提示词附加压缩教条文本。 |
@@ -369,7 +369,7 @@
 | `compat` | { roles?, dropFields? } | {} | — | 逐路由线上兼容覆盖；provider 条目按键级覆盖全局；dropFields 加法并集。 |
 | `direct` | boolean | false | — | 客户端侧豁免：该上游流量完全不指向 bili。 |
 | `passthrough` | boolean | false | — | 路由级逐字节透传、无会话状态——面向反作弊上游。 |
-| `renderNone` | boolean | unset (follows diagnostics.renderNone) | — | 路由级渲染标记：true 时本路由历史不渲染 ACP 标签，false 强制开启（#2483）。 |
+| `renderNone` | boolean | unset (follows diagnostics.renderNone) | — | 路由级渲染：true 时同时停用 ACP 标签与临时 ACP 状态刷新消息，兼容有状态中转；false 时两者开启（#2483）。完整压缩提醒及工具仍保留；提醒或真正压缩仍可能引起一次中转会话重建。 |
 | `pinEffort` | boolean | false | — | 仅 fork：本路由每个会话的推理强度锁定为首个请求的值。 |
 | `imageBilling` | "auto" \| "pixels" \| "bytes" | auto (→ pixels) | — | 本路由图片 token 计费口径；bytes 为字节中继的显式指定。 |
 | `imageTokenCap` | number | unset (uncapped) | — | 本路由单张图片 token 成本上限。 |

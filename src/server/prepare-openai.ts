@@ -549,7 +549,7 @@ export async function prepareOpenai(
         // #4521: armed-but-silent window — same carrier + rationale as the
         // anthropic lane (ephemeral trailing user message, current refs
         // instead of model-guessed ones).
-        if (turn.statusLine) {
+        if (turn.statusLine && renderStrategy !== "none") {
             rebuiltMessages = [...rebuiltMessages, { role: "user", content: turn.statusLine }];
         }
         // [#1343/#1457] surface any earlier undelivered retrieve as an ephemeral
